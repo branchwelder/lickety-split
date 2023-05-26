@@ -48,11 +48,45 @@ body {
 }
 
 .gutter.gutter-horizontal {
-  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==");
   cursor: col-resize;
 }
 
 .gutter.gutter-vertical {
-  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=");
   cursor: row-resize;
+}
+
+/* Pane UI */
+
+.pane-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.pane-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+}
+
+.pane {
+  flex: 1;
+}
+
+button {
+  width: 1rem;
+  height: 1rem;
+  border: none;
+  background-color: var(--dark0);
+  cursor: pointer;
+  transition: 100ms;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--light4);
+}
+
+button:hover {
+  background-color: var(--dark2);
+  /* box-shadow: 0 0 2px black; */
+  color: var(--light0);
 }
