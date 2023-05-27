@@ -4,9 +4,10 @@
     "host": "vite --host",
     "build": "vite build",
     "preview": "vite build && vite preview",
-    "deploy": "vite build --base=/split-test/ && gh-pages -d dist"
+    "deploy": "vite build --base=/lickety-split/ && gh-pages -d dist"
   },
   "dependencies": {
+    "gh-pages": "^5.0.0",
     "lit-html": "^2.7.4",
     "split.js": "^1.6.5",
     "splitjs": "^0.0.1",
