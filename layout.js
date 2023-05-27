@@ -16,9 +16,10 @@ function paneToolbar(split, close) {
 }
 
 class Pane {
-  constructor({ paneEvents, id, onSplit, onRemove }, pane) {
+  constructor({ paneEvents, id, onSplit, onRemove, size }, pane) {
     this.id = pane ? pane.id : id;
     this.pane = pane ? pane.pane : document.createElement("div");
+    this.size = size;
 
     this.dom = document.createElement("div");
     this.dom.classList.add("pane-container");
@@ -47,12 +48,13 @@ export class SplitPane {
   constructor(
     children,
     manager,
-    { paneEvents, direction = "horizontal", id = "layout-0", onRemove }
+    { paneEvents, size, direction = "horizontal", id = "layout-0", onRemove }
   ) {
     this.manager = manager;
     this.direction = direction;
     this.paneEvents = paneEvents;
     this.id = id;
+    this.size = size;
 
     this.removeSelf = onRemove;
 
@@ -69,23 +71,25 @@ export class SplitPane {
     this.split;
   }
 
-  createSplit(children) {
+  createSplit(children, size) {
     const splitID = `${this.id}-${this.currentSplitID}`;
     this.currentSplitID++;
 
     return new SplitPane(children, this.manager, {
       id: splitID,
+      size: size,
       paneEvents: this.paneEvents,
       direction: this.oppositeAxis(),
       onRemove: () => this.removeChild(splitID),
     });
   }
 
-  createPane(pane) {
+  createPane(pane, size) {
     const paneID = pane ? pane.id : this.manager.nextPaneID();
 
     const config = {
       id: paneID,
+      size: size,
       paneEvents: this.paneEvents,
       direction: this.oppositeAxis(),
 
@@ -100,18 +104,25 @@ export class SplitPane {
 
   createChild(child) {
     if (child.children) {
-      return this.createSplit(child.children);
+      return this.createSplit(child.children, child.size);
     } else {
-      return this.createPane(child.pane);
+      return this.createPane(child.pane, child.size);
     }
   }
 
   updateSplit() {
     if (this.split) this.split.destroy();
 
+    // let multiplier =
+    //   100 / this.children.reduce((acc, cur) => acc + cur.size, 0);
+    // // console.log(100 / total);
+
+    // const sizes = this.children.map((child) => child.size * multiplier);
+
     this.split = Split(this.dom.children, {
       direction: this.direction,
       gutterSize: 2,
+      // sizes: sizes,
     });
   }
 
