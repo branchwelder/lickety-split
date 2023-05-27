@@ -16,18 +16,20 @@ function paneToolbar(split, close) {
 }
 
 class Pane {
-  constructor({ paneEvents, id, split, close, paneDom }) {
+  constructor({ paneEvents, id, split, close, paneDom, manager }) {
     this.id = id;
 
     this.dom = document.createElement("div");
     this.dom.classList.add("pane-container", "dropzone");
     this.dom.id = `${this.id}-container`;
 
+    this.manager = manager;
+
     render(paneToolbar(split, close), this.dom);
 
     this.paneDom = paneDom ?? document.createElement("div");
     this.paneDom.id = this.id;
-    this.paneDom.classList.add("pane", "dropzone");
+    this.paneDom.classList.add("pane");
 
     this.dom.appendChild(this.paneDom);
 
@@ -38,8 +40,8 @@ class Pane {
     }
   }
 
-  toJSON() {
-    return this.id;
+  saveLayout() {
+    return this.manager.paneMap[this.id];
   }
 }
 
@@ -77,7 +79,6 @@ export class SplitPane {
   createSplit(config) {
     const splitID = `${this.id}-${this.currentSplitID}`;
     this.currentSplitID++;
-    console.log(config);
 
     return new SplitPane(config.children, this.manager, {
       id: splitID,
@@ -102,6 +103,7 @@ export class SplitPane {
     return new Pane({
       id,
       paneDom,
+      manager: this.manager,
       paneEvents: this.manager.paneEvents,
       split: (direction) =>
         direction == this.direction
@@ -134,29 +136,23 @@ export class SplitPane {
     }
   }
 
-  updateSizes(sizes) {
-    console.log("update sizes");
-    // sizes.forEach((size, index) => (this.children[index].size = size));
-  }
-
   updateSplit() {
-    // if (this.split) console.log(this.split.getSizes());
     if (this.split) this.split.destroy();
 
-    // let multiplier =
-    //   100 / this.children.reduce((acc, cur) => acc + cur.size, 0);
+    if (this.sizes.length != this.children.length) {
+      throw new Error("Error: Children array out of sync with sizes");
+    }
 
-    // const sizes = this.children.map((child) => child.size * multiplier);
-    // this.updateSizes(sizes);
+    let multiplier = 100 / this.sizes.reduce((acc, cur) => acc + cur, 0);
+
+    this.sizes = this.sizes.map((size) => size * multiplier);
 
     this.split = Split(this.dom.children, {
       direction: this.direction,
       gutterSize: 2,
-      // sizes: sizes,
-      onDragEnd: (sizes) => this.updateSizes(sizes),
+      sizes: this.sizes,
+      onDragEnd: (sizes) => (this.sizes = sizes),
     });
-
-    //
   }
 
   convertPaneToSplit(paneID) {
@@ -173,6 +169,7 @@ export class SplitPane {
 
     // Put the new split into the children array
     this.children.splice(index, 0, newSplit);
+    // Don't need to change this.sizes because it is a 1:1 element swap
 
     // Replace the dom of the old pane with the dom of the new split
     oldPane.dom.replaceWith(newSplit.dom);
@@ -184,6 +181,9 @@ export class SplitPane {
   insertChild(child, index) {
     this.children.splice(index + 1, 0, child);
     this.children[index].dom.after(child.dom);
+
+    // Insert a size equal to the size at the index
+    this.sizes.splice(index, 0, this.sizes[index]);
 
     this.updateSplit();
     this.manager.sync();
@@ -231,14 +231,24 @@ export class SplitPane {
       });
 
       const oldSplit = this.children.splice(index, 1, ...newChildren)[0];
+
       oldSplit.dom.replaceWith(...newChildren.map((child) => child.dom));
+
+      // Remap the sizes so they fill the size of the removed split
+      const insertSizes = grandchild.sizes;
+      const newSizes = insertSizes.map(
+        (size) => (size * this.sizes[index]) / 100
+      );
+      this.sizes.splice(index, 1, ...newSizes);
     }
 
     this.updateSplit();
   }
 
   closePane(childID) {
-    const removed = this.children.splice(this.getChildIndex(childID), 1)[0];
+    const index = this.getChildIndex(childID);
+    const removed = this.children.splice(index, 1)[0];
+    this.sizes.splice(index, 1)[0];
     this.manager.removePane(removed);
 
     if (this.children.length == 1) {
@@ -248,10 +258,10 @@ export class SplitPane {
     }
   }
 
-  toJSON() {
+  saveLayout() {
     return {
       sizes: this.sizes,
-      children: this.children.map((child) => child.toJSON()),
+      children: this.children.map((child) => child.saveLayout()),
     };
   }
 }
@@ -321,8 +331,6 @@ export class SplitLayoutManager {
 
   onDragOverPane(e, paneID) {
     e.preventDefault();
-
-    console.debug("dragging over", paneID);
   }
 
   onDragEnterPane(e, paneID) {
@@ -341,8 +349,6 @@ export class SplitLayoutManager {
   }
 
   saveLayout() {
-    let layoutJSON = this.root.toJSON();
-    // console.log(layoutJSON);
-    // console.log(JSON.stringify(layoutJSON, null, 2));
+    return this.root.saveLayout();
   }
 }

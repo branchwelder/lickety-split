@@ -2,19 +2,30 @@ import { SplitLayoutManager } from "./layout";
 import { html, render } from "lit-html";
 import { live } from "lit-html/directives/live.js";
 
-const testLayout = {
-  sizes: [50, 50],
+const test = {
+  sizes: [12.454740385168986, 31.13685096292246, 56.408408651908545],
   children: [
+    "4",
     {
-      sizes: [40, 60],
+      sizes: [16.74202284778404, 49.92464381888263, 33.333333333333336],
       children: [
-        { sizes: [40, 60], children: ["3", "4"] },
-        { sizes: [20, 50, 30], children: ["empty", "empty", "empty"] },
+        {
+          sizes: [50, 50],
+          children: ["4", "3"],
+        },
+        "2",
+        "1",
       ],
     },
     {
-      sizes: [30, 40, 30],
-      children: ["empty", "2", "3"],
+      sizes: [50, 50],
+      children: [
+        {
+          sizes: [50],
+          children: ["0"],
+        },
+        "3",
+      ],
     },
   ],
 };
@@ -27,7 +38,7 @@ const filmstrip = document.createElement("div");
 filmstrip.id = "filmstrip";
 document.body.appendChild(filmstrip);
 
-const layout = new SplitLayoutManager(testLayout, parentNode, sync);
+const layout = new SplitLayoutManager(test, parentNode, sync);
 
 function options() {
   return colors.map(
