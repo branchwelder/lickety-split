@@ -16,121 +16,217 @@ function paneToolbar(split, close) {
 }
 
 class Pane {
-  constructor({
-    children,
-    parentNode,
-    paneEvents,
-    index = 0,
-    onSplit,
-    onRemove,
-  }) {
-    this.id = children;
-    this.index = index;
+  constructor({ paneEvents, id, onSplit, onRemove }, pane) {
+    this.id = pane ? pane.id : id;
+    this.pane = pane ? pane.pane : document.createElement("div");
 
     this.dom = document.createElement("div");
     this.dom.classList.add("pane-container");
+    this.dom.id = `${this.id}-container`;
 
     render(paneToolbar(onSplit, onRemove), this.dom);
 
-    this.pane = document.createElement("div");
     this.pane.id = this.id;
     this.pane.classList.add("pane");
 
     this.dom.appendChild(this.pane);
 
-    if (paneEvents) Object.assign(this.pane, paneEvents);
-
-    parentNode.appendChild(this.dom);
+    if (paneEvents) {
+      Object.entries(paneEvents).forEach(
+        ([ev, handler]) => (this.pane[ev] = (e) => handler(e, this.id))
+      );
+    }
   }
 
-  panes() {
+  paneDom() {
     return { [this.id]: this.dom };
   }
 }
 
-export class NestedSplitLayout {
-  constructor({
+export class SplitPane {
+  constructor(
     children,
-    parentNode,
-    paneEvents,
-    direction = "horizontal",
-    index = 0,
-    onSplit,
-    onRemove,
-  }) {
+    manager,
+    { paneEvents, direction = "horizontal", id = "layout-0", onRemove }
+  ) {
+    this.manager = manager;
     this.direction = direction;
     this.paneEvents = paneEvents;
-    this.id = index;
-    this.onSplit = onSplit;
-    this.onRemove = onRemove;
+    this.id = id;
 
-    this.index = index;
-    this.currentChildIndex = 0;
+    this.removeSelf = onRemove;
+
+    this.currentSplitID = 0; // incremented every time a child is added
 
     this.dom = document.createElement("div");
+    this.dom.id = this.id;
     this.dom.classList.add(direction);
-    parentNode.appendChild(this.dom);
 
-    this.children = children.map((child) => this.addChild(child));
+    this.children = [];
 
-    this.children.forEach((child) => this.dom.appendChild(child.dom));
-    this.split = this.doSplit();
+    children.forEach((child) => this.insertChild(child));
+
+    this.split;
   }
 
-  doSplit() {
-    if (this.split) this.split.destroy();
+  createSplit(children) {
+    const splitID = `${this.id}-${this.currentSplitID}`;
+    this.currentSplitID++;
 
-    return Split(this.dom.children, {
-      direction: this.direction,
-      gutterSize: 3,
+    return new SplitPane(children, this.manager, {
+      id: splitID,
+      paneEvents: this.paneEvents,
+      direction: this.oppositeAxis(),
+      onRemove: () => this.removeChild(splitID),
     });
   }
 
-  addChild(child) {
-    const index = this.currentChildIndex;
+  createPane(pane) {
+    const paneID = pane ? pane.id : this.manager.nextPaneID();
+
     const config = {
-      children: child,
-      index: index,
-      parentNode: this.dom,
+      id: paneID,
       paneEvents: this.paneEvents,
-      direction: this.direction == "horizontal" ? "vertical" : "horizontal",
-      onSplit: (direction) => this.splitChild(index, direction),
-      onRemove: () => this.removeChild(index),
+      direction: this.oppositeAxis(),
+
+      onSplit: (direction) =>
+        direction == this.direction
+          ? this.splitChild(paneID)
+          : this.insertChild({}, this.getChildIndex(paneID)),
+      onRemove: () => this.removeChild(paneID),
     };
-    this.currentChildIndex++;
-    return Array.isArray(child)
-      ? new NestedSplitLayout(config)
-      : new Pane(config);
+    return new Pane(config, pane);
   }
 
-  splitChild(childIndex, direction) {
-    console.log("splitting child", childIndex, direction);
-    if (direction == this.direction) {
-      // we need to actually add the split the parent
+  createChild(child) {
+    if (child.children) {
+      return this.createSplit(child.children);
     } else {
-      // we add a new child
+      return this.createPane(child.pane);
     }
   }
 
-  removeChild(childIndex) {
-    const removeIndex = this.children.findIndex(
-      (child) => child.index == childIndex
-    );
+  updateSplit() {
+    if (this.split) this.split.destroy();
 
-    const removed = this.children.splice(removeIndex, 1);
-    this.dom.removeChild(removed[0].dom);
+    this.split = Split(this.dom.children, {
+      direction: this.direction,
+      gutterSize: 2,
+    });
+  }
+
+  splitChild(paneID) {
+    const index = this.getChildIndex(paneID);
+    const oldPane = this.children.splice(index, 1)[0];
+    const newSplit = this.createSplit([
+      { size: 50, pane: oldPane },
+      { size: 50 },
+    ]);
+
+    oldPane.dom.replaceWith(newSplit.dom);
+
+    this.updateSplit();
+  }
+
+  insertChild(config, index) {
+    const child = this.createChild(config);
+
+    if (index != undefined) {
+      // insert the child after the specified index
+      this.children.splice(index + 1, 0, child);
+      this.children[index].dom.after(child.dom);
+    } else {
+      // add the child to the end
+      this.children.push(child);
+      this.dom.appendChild(child.dom);
+    }
+
+    this.updateSplit();
+  }
+
+  oppositeAxis() {
+    return this.direction == "horizontal" ? "vertical" : "horizontal";
+  }
+
+  getChildIndex(childID) {
+    return this.children.findIndex((child) => child.id == childID);
+  }
+
+  removeChild(childID) {
+    const removed = this.children.splice(this.getChildIndex(childID), 1)[0];
+    this.manager.removePane(removed);
 
     if (this.children.length == 0) {
-      this.onRemove(this.index);
+      if (this.removeSelf) this.removeSelf(this.index);
       return;
     }
 
-    this.split = this.doSplit();
+    this.updateSplit();
   }
 
-  panes() {
+  paneDom() {
     return this.children.reduce((acc, cur) => {
-      return { ...acc, ...cur.panes() };
+      return { ...acc, ...cur.paneDom() };
     }, {});
+  }
+}
+
+export class SplitLayoutManager {
+  constructor(children, parentNode, sync) {
+    this.currentPaneID = 0;
+    this.paneMap = {};
+
+    const paneEvents = {
+      ondrop: (e, paneID) => this.onDropInPane(e, paneID, sync),
+      ondragover: (e, paneID) => this.onDragOverPane(e, paneID, sync),
+      ondragenter: (e, paneID) => this.onDragEnterPane(e, paneID, sync),
+      ondragleave: (e, paneID) => this.onDragLeavePane(e, paneID, sync),
+    };
+
+    this.root = new SplitPane(children, this, { paneEvents });
+    parentNode.appendChild(this.root.dom);
+  }
+
+  nextPaneID() {
+    const paneID = `pane-${this.currentPaneID}`;
+    this.currentPaneID++;
+    this.paneMap[paneID] = null;
+    return paneID;
+  }
+
+  removePane(pane) {
+    pane.dom.remove();
+    delete this.paneMap[pane.id];
+  }
+
+  onDropInPane(e, paneID, sync) {
+    e.preventDefault();
+    const data = e.dataTransfer.getData("text");
+    console.debug(data, "dropped in", paneID);
+    this.paneMap[paneID] = data;
+
+    sync();
+  }
+
+  onDragOverPane(e, paneID) {
+    e.preventDefault();
+
+    console.debug("dragging over", paneID);
+  }
+
+  onDragEnterPane(e, paneID) {
+    e.preventDefault();
+
+    console.debug("drag entered", paneID);
+  }
+
+  onDragLeavePane(e, paneID) {
+    e.preventDefault();
+
+    console.debug("drag left", paneID);
+  }
+
+  saveLayout() {
+    console.log(this.root.panes);
   }
 }

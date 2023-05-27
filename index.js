@@ -1,76 +1,67 @@
-import { NestedSplitLayout } from "./layout";
+import { SplitLayoutManager } from "./layout";
 import { html, render } from "lit-html";
 import { map } from "lit-html/directives/map.js";
 import { live } from "lit-html/directives/live.js";
 
-const children = [["a", "b", "c"], ["d"]];
-
-function drop(e) {
-  e.preventDefault();
-  const data = e.dataTransfer.getData("application/split");
-  state.layout[e.target.id] = data;
-  syncView();
-}
-
-const filmstrip = document.createElement("div");
-filmstrip.id = "filmstrip";
-document.body.appendChild(filmstrip);
+const children = [
+  {
+    size: 60,
+    children: [{ size: 40 }, { size: 20 }, { size: 40 }],
+  },
+  { size: 40 },
+];
 
 const parentNode = document.createElement("div");
 parentNode.id = "container";
 document.body.appendChild(parentNode);
 
-const paneEvents = {
-  ondrop: drop,
-  ondragover: (e) => e.preventDefault(),
-};
+const filmstrip = document.createElement("div");
+filmstrip.id = "filmstrip";
+document.body.appendChild(filmstrip);
 
-const root = new NestedSplitLayout({ children, parentNode, paneEvents });
-
-function drag(e, data) {
-  e.dataTransfer.setData("application/split", data);
-}
+const layout = new SplitLayoutManager(children, parentNode, sync);
 
 function testViews() {
   return html`${map(
-    Object.keys(state.ops),
-    (key) =>
-      html`<div draggable="true" @dragstart=${(e) => drag(e, key)}>${key}</div>`
+    Object.entries(state.colors),
+    ([key, val]) =>
+      html`<div
+        class="option"
+        draggable="true"
+        style="--color: ${val}"
+        @dragstart=${(e) => e.dataTransfer.setData("text", key)}></div>`
   )}`;
 }
 
 function view(key, val) {
-  return html`<div class="pane-view">
-    <div>${key}</div>
+  return html`<div class="pane-view" style="--color: ${val}">
     <input
       .value=${live(val)}
-      type="number"
+      type="color"
       @input=${(e) => {
-        state.ops[key].value = e.target.value;
-        syncView();
+        state.colors[key] = e.target.value;
+        sync();
       }} />
   </div>`;
 }
 
 const state = {
-  ops: {
-    hello: { value: 10 },
-    world: { value: 20 },
-    split: { value: 30 },
-    pane: { value: 40 },
-    layout: { value: 50 },
-  },
-  layout: {},
+  colors: ["#046487", "#395c00", "#3b234f", "#4f2338", "#4f4a23"],
 };
 
 render(testViews(), filmstrip);
 
-function syncView() {
-  console.log(state.layout);
-  Object.entries(state.layout).forEach(([paneID, stateField]) =>
-    render(
-      view(stateField, state.ops[stateField].value),
-      document.getElementById(paneID)
-    )
-  );
+function sync() {
+  Object.entries(layout.paneMap).forEach(([paneID, data]) => {
+    let pane = document.getElementById(paneID);
+    if (!data) {
+      render(html`<span class="empty">empty!</span>`, pane);
+    } else {
+      render(view(data, state.colors[data]), pane);
+    }
+  });
+
+  render(testViews(), filmstrip);
 }
+
+sync();
