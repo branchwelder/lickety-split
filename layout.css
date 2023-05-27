@@ -27,6 +27,18 @@
 .pane-container {
   display: flex;
   flex-direction: column;
+  position: relative;
+  user-select: none;
+}
+
+.pane-container.targeted::before {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  outline: 1px solid white;
+  outline-offset: -1px;
 }
 
 .pane {
@@ -42,6 +54,7 @@
   align-items: center;
   justify-content: end;
   background-color: black;
+  user-select: none;
 }
 
 button {

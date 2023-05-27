@@ -42,16 +42,24 @@ body {
 #container {
   display: flex;
   flex: 1;
+  border: 2px solid black;
 }
 
 .pane-view {
   position: relative;
   height: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1;
+  color: white;
 }
+
+.pane-view > span {
+  z-index: inherit;
+}
+
 .pane-view::before {
   content: "";
   z-index: 0;
@@ -71,8 +79,10 @@ input[type="color"] {
   -moz-appearance: none;
   appearance: none;
   background-color: transparent;
-  width: 100px;
-  height: 100px;
+  max-width: 100px;
+  max-height: 100px;
+  height: 100%;
+  width: 100%;
   border: none;
   cursor: pointer;
   z-index: 1;
