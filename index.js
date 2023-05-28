@@ -3,29 +3,16 @@ import { html, render } from "lit-html";
 import { live } from "lit-html/directives/live.js";
 
 const test = {
-  sizes: [12.454740385168986, 31.13685096292246, 56.408408651908545],
+  sizes: [19.074271444588607, 47.59239522207807, 33.333333333333336],
   children: [
-    "4",
     {
-      sizes: [16.74202284778404, 49.92464381888263, 33.333333333333336],
-      children: [
-        {
-          sizes: [50, 50],
-          children: ["4", "3"],
-        },
-        "2",
-        "1",
-      ],
+      sizes: [33.33333333333333, 33.33333333333333, 33.33333333333333],
+      children: ["3", "1", "0"],
     },
+    "3",
     {
       sizes: [50, 50],
-      children: [
-        {
-          sizes: [50],
-          children: ["0"],
-        },
-        "3",
-      ],
+      children: ["2", "4"],
     },
   ],
 };
@@ -41,14 +28,21 @@ document.body.appendChild(filmstrip);
 const layout = new SplitLayoutManager(test, parentNode, sync);
 
 function options() {
-  return colors.map(
-    (val, index) =>
-      html`<div
-        class="option"
-        draggable="true"
-        style="--color: ${val}"
-        @dragstart=${(e) => e.dataTransfer.setData("text", index)}></div>`
-  );
+  return html`${colors.map(
+      (val, index) =>
+        html`<div
+          class="option"
+          draggable="true"
+          style="--color: ${val}"
+          @dragstart=${(e) => e.dataTransfer.setData("text", index)}></div>`
+    )}<button
+      @click=${() => {
+        const layoutJSON = layout.saveLayout();
+        console.log(layoutJSON);
+        navigator.clipboard.writeText(JSON.stringify(layoutJSON));
+      }}>
+      copy layout JSON
+    </button>`;
 }
 
 const colors = ["#046487", "#395c00", "#3b234f", "#4f2338", "#4f4a23"];

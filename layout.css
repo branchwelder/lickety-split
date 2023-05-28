@@ -10,8 +10,6 @@
 
 .gutter {
   background-color: black;
-  background-repeat: no-repeat;
-  background-position: 50%;
 }
 
 .gutter.gutter-horizontal {
@@ -55,9 +53,10 @@
   justify-content: end;
   background-color: black;
   user-select: none;
+  cursor: grab;
 }
 
-button {
+.pane-toolbar button {
   width: 1rem;
   height: 1rem;
   border: none;
@@ -70,7 +69,7 @@ button {
   color: var(--light4);
 }
 
-button:hover {
+.pane-toolbar button:hover {
   background-color: var(--dark1);
   color: var(--light0);
 }

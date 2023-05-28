@@ -40,6 +40,10 @@ class Pane {
     }
   }
 
+  createToolbar() {
+    const toolbarContainer = document.createElement("div");
+  }
+
   saveLayout() {
     return this.manager.paneMap[this.id];
   }
@@ -49,7 +53,7 @@ export class SplitPane {
   constructor(
     children,
     manager,
-    { sizes, direction = "horizontal", id = "layout-0", collapse }
+    { sizes, direction = "horizontal", id, collapse }
   ) {
     if (children.length < 2) {
       console.warn(
@@ -88,7 +92,7 @@ export class SplitPane {
     });
   }
 
-  claimSplit(existingSplit) {
+  adoptSplit(existingSplit) {
     const splitID = `${this.id}-${this.currentSplitID}`;
     this.currentSplitID++;
 
@@ -123,8 +127,8 @@ export class SplitPane {
         paneDom: child.paneDom,
       });
     } else if (child instanceof SplitPane) {
-      // Claim the split as a child of this split
-      return this.claimSplit(child);
+      // Adopt the split
+      return this.adoptSplit(child);
     } else if (child.children) {
       // If it has children, then we need to make a new split to hold them
       return this.createSplit(child);
@@ -222,7 +226,7 @@ export class SplitPane {
             paneDom: child.paneDom,
           });
         } else if (child instanceof SplitPane) {
-          return this.claimSplit(child);
+          return this.adoptSplit(child);
         } else {
           console.error(
             "Error collapsing SplitPane: Encountered grandchild that is not a Pane or SplitPane"
@@ -246,12 +250,16 @@ export class SplitPane {
   }
 
   closePane(childID) {
+    // Do not close the pane if this is the root split and the pane is the only child
+    // There is probably a better way of handling this
+    if (this.id == "root" && this.children.length == 1) return;
+
     const index = this.getChildIndex(childID);
     const removed = this.children.splice(index, 1)[0];
     this.sizes.splice(index, 1)[0];
     this.manager.removePane(removed);
 
-    if (this.children.length == 1) {
+    if (this.children.length == 1 && this.id != "root") {
       this.collapse(this.children[0]);
     } else {
       this.updateSplit();
@@ -283,8 +291,8 @@ export class SplitLayoutManager {
     };
 
     this.root = new SplitPane(baseLayout.children, this, {
+      id: "root",
       sizes: baseLayout.sizes,
-      collapse: () => console.log("collapse hit the root"),
     });
     parentNode.appendChild(this.root.dom);
   }

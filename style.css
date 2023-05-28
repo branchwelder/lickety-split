@@ -37,6 +37,7 @@ body {
   background-color: var(--color);
   height: 4rem;
   aspect-ratio: 1;
+  cursor: grab;
 }
 
 #container {
