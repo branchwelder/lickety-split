@@ -62,7 +62,9 @@ function colorPickerPane(paneID, paneData) {
   // colorpicker, which can change the color of the corresponding color
   // in the colors object and then resynchronize the layout
   return html`<div class="pane-view" style="--color: ${colors[paneData]}">
-    <span>${paneID}</span>
+    <span>paneID: ${paneID} </span>
+    <span>paneData: ${paneData}</span>
+
     <input
       .value=${live(colors[paneData])}
       type="color"

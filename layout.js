@@ -305,7 +305,6 @@ export class SplitLayoutManager {
   removePane(pane) {
     pane.dom.remove();
     delete this.paneMap[pane.id];
-    this.saveLayout();
   }
 
   onStartDragPane(e, paneID) {
@@ -350,7 +349,6 @@ export class SplitLayoutManager {
 
   saveLayout() {
     console.log(this.paneMap);
-
     return this.root.saveLayout();
   }
 
