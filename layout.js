@@ -49,7 +49,7 @@ class Pane {
   }
 }
 
-export class SplitPane {
+export class SplitGroup {
   constructor(
     children,
     manager,
@@ -57,7 +57,7 @@ export class SplitPane {
   ) {
     if (children.length < 2) {
       console.warn(
-        "Problem building split layout: SplitPanes must have at least two children"
+        "Problem building split layout: SplitGroups must have at least two children"
       );
     }
     this.manager = manager;
@@ -84,11 +84,11 @@ export class SplitPane {
     const splitID = `${this.id}-${this.currentSplitID}`;
     this.currentSplitID++;
 
-    return new SplitPane(config.children, this.manager, {
+    return new SplitGroup(config.children, this.manager, {
       id: splitID,
       sizes: config.sizes,
       direction: this.oppositeAxis(),
-      collapse: (grandChild) => this.collapseSplitPane(splitID, grandChild),
+      collapse: (grandChild) => this.collapseSplitGroup(splitID, grandChild),
     });
   }
 
@@ -98,7 +98,7 @@ export class SplitPane {
 
     existingSplit.id = splitID;
     existingSplit.collapse = (grandChild) =>
-      this.collapseSplitPane(splitID, grandChild);
+      this.collapseSplitGroup(splitID, grandChild);
 
     return existingSplit;
   }
@@ -118,7 +118,7 @@ export class SplitPane {
   }
 
   createChild(child) {
-    // Returns either a Pane or a SplitPane based on what the child is.
+    // Returns either a Pane or a SplitGroup based on what the child is.
 
     if (child instanceof Pane) {
       // Create a pane, but reuse the ID and DOM
@@ -126,7 +126,7 @@ export class SplitPane {
         id: child.id,
         paneDom: child.paneDom,
       });
-    } else if (child instanceof SplitPane) {
+    } else if (child instanceof SplitGroup) {
       // Adopt the split
       return this.adoptSplit(child);
     } else if (child.children) {
@@ -201,7 +201,7 @@ export class SplitPane {
     return this.children.findIndex((child) => child.id == childID);
   }
 
-  collapseSplitPane(childID, grandchild) {
+  collapseSplitGroup(childID, grandchild) {
     // If one of the children only has one child left, it should collapse itself.
     const index = this.getChildIndex(childID);
 
@@ -215,7 +215,7 @@ export class SplitPane {
 
       // Replace the dom of the old pane with the dom of the new split
       oldSplit.dom.replaceWith(newPane.dom);
-    } else if (grandchild instanceof SplitPane) {
+    } else if (grandchild instanceof SplitGroup) {
       // else if it is a split pane, all of its children should become our children
       // because it should be on the same axis as this one
 
@@ -225,11 +225,11 @@ export class SplitPane {
             id: child.id,
             paneDom: child.paneDom,
           });
-        } else if (child instanceof SplitPane) {
+        } else if (child instanceof SplitGroup) {
           return this.adoptSplit(child);
         } else {
           console.error(
-            "Error collapsing SplitPane: Encountered grandchild that is not a Pane or SplitPane"
+            "Error collapsing SplitGroup: Encountered grandchild that is not a Pane or SplitGroup"
           );
         }
       });
@@ -275,11 +275,11 @@ export class SplitPane {
 }
 
 export class SplitLayoutManager {
-  constructor(baseLayout, parentNode, sync) {
+  constructor(layout, parentNode, sync) {
     this.currentPaneID = 0;
     this.paneMap = {};
-    this.sync = sync;
-    this.sourcePane = null;
+
+    this.sync = () => sync(this.paneMap);
 
     this.paneEvents = {
       ondrop: (e, paneID) => this.onDropInPane(e, paneID),
@@ -287,13 +287,10 @@ export class SplitLayoutManager {
       ondragenter: (e, paneID) => this.onDragEnterPane(e, paneID),
       ondragleave: (e, paneID) => this.onDragLeavePane(e, paneID),
       ondragstart: (e, paneID) => this.onStartDragPane(e, paneID),
-      ondragend: (e, paneID) => this.onDragEndPane(e, paneID),
     };
 
-    this.root = new SplitPane(baseLayout.children, this, {
-      id: "root",
-      sizes: baseLayout.sizes,
-    });
+    this.loadLayout(layout);
+
     parentNode.appendChild(this.root.dom);
   }
 
@@ -312,21 +309,16 @@ export class SplitLayoutManager {
   }
 
   onStartDragPane(e, paneID) {
-    e.dataTransfer.setData("text", this.paneMap[paneID]);
+    e.dataTransfer.setData("pane-data", this.paneMap[paneID]);
     e.dataTransfer.setData("source-pane", paneID);
     e.dataTransfer.setDragImage(e.currentTarget, 10, 10);
-  }
-
-  onDragEndPane(e, paneID) {
-    console.log("drag end");
   }
 
   onDropInPane(e, paneID) {
     e.preventDefault();
     e.currentTarget.classList.remove("targeted");
 
-    const data = e.dataTransfer.getData("text");
-
+    const data = e.dataTransfer.getData("pane-data");
     const sourcePane = e.dataTransfer.getData("source-pane");
 
     if (sourcePane) {
@@ -357,6 +349,24 @@ export class SplitLayoutManager {
   }
 
   saveLayout() {
+    console.log(this.paneMap);
+
     return this.root.saveLayout();
+  }
+
+  loadLayout(layoutJSON) {
+    this.currentPaneID = 0;
+    this.paneMap = {};
+    this.root = new SplitGroup(layoutJSON.children, this, {
+      id: "root",
+      sizes: layoutJSON.sizes,
+    });
+  }
+
+  attachPaneDropData(e, data) {
+    if (typeof data != "string") {
+      console.warn("Warning: I haven't tried non-string pane data");
+    }
+    e.dataTransfer.setData("pane-data", data);
   }
 }

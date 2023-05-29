@@ -23,7 +23,7 @@ body {
   flex-direction: column;
 }
 
-#filmstrip {
+#pane-options {
   z-index: 10;
   display: flex;
   background-color: black;
