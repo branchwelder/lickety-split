@@ -9,8 +9,8 @@ may vary.
 ## Usage
 
 You'll need `layout.js` and `layout.css` from this repository, as well as the
-NPM packages `split.js` and `lit-html`. I'll figure out better distribution
-eventually. To create a new layout, you create an instance of the
+NPM package `split.js`. The demo also uses `lit-html`. I'll figure out better
+distribution eventually. To create a new layout, you create an instance of the
 `SplitLayoutManager` class like so:
 
 ```js
