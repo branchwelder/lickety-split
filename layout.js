@@ -1,19 +1,4 @@
 import Split from "split.js";
-import { html, render } from "lit-html";
-
-function paneToolbar(split, close) {
-  return html`<div draggable="true" class="pane-toolbar">
-    <button @click=${() => split("vertical")}>
-      <i class="fa-solid fa-grip-lines-vertical fa-xs"></i>
-    </button>
-    <button @click=${() => split("horizontal")}>
-      <i class="fa-solid fa-grip-lines fa-xs"></i>
-    </button>
-    <button @click=${() => close()}>
-      <i class="fa-solid fa-xmark fa-xs"></i>
-    </button>
-  </div>`;
-}
 
 class Pane {
   constructor({ paneEvents, id, split, close, paneDom, manager }) {
@@ -25,7 +10,7 @@ class Pane {
 
     this.manager = manager;
 
-    render(paneToolbar(split, close), this.dom);
+    this.dom.appendChild(this.createToolbar(split, close));
 
     this.paneDom = paneDom ?? document.createElement("div");
     this.paneDom.id = this.id;
@@ -40,8 +25,27 @@ class Pane {
     }
   }
 
-  createToolbar() {
-    const toolbarContainer = document.createElement("div");
+  createToolbar(split, close) {
+    const toolbar = document.createElement("div");
+    toolbar.classList.add("pane-toolbar");
+    toolbar.draggable = true;
+
+    const hSplit = document.createElement("button");
+    hSplit.onclick = () => split("horizontal");
+    hSplit.innerText = "=";
+    toolbar.appendChild(hSplit);
+
+    const vSplit = document.createElement("button");
+    vSplit.onclick = () => split("vertical");
+    vSplit.innerText = "||";
+    toolbar.appendChild(vSplit);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.onclick = () => close();
+    closeBtn.innerText = "X";
+    toolbar.appendChild(closeBtn);
+
+    return toolbar;
   }
 
   saveLayout() {

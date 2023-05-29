@@ -1,12 +1,10 @@
-/* LAYOUT CSS */
+/* FOR SPLIT.JS */
 
 .horizontal {
   flex-direction: row;
   display: flex;
   flex: 1;
 }
-
-/* GUTTERS */
 
 .gutter {
   background-color: black;
@@ -20,7 +18,7 @@
   cursor: row-resize;
 }
 
-/* Pane UI */
+/* PANE UI */
 
 .pane-container {
   display: flex;
@@ -29,6 +27,7 @@
   user-select: none;
 }
 
+/* When pane is a drop target, outline it in white */
 .pane-container.targeted::before {
   content: "";
   position: absolute;
@@ -48,6 +47,7 @@
 /* PANE TOOLBAR */
 
 .pane-toolbar {
+  font-family: monospace;
   display: flex;
   align-items: center;
   justify-content: end;
@@ -57,19 +57,15 @@
 }
 
 .pane-toolbar button {
-  width: 1rem;
-  height: 1rem;
   border: none;
   background-color: black;
   cursor: pointer;
   transition: 100ms;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--light4);
+  color: #b5b5b5;
+  margin-bottom: 0.1rem;
 }
 
 .pane-toolbar button:hover {
-  background-color: var(--dark1);
-  color: var(--light0);
+  background-color: #2b2b2b;
+  color: #dadada;
 }
