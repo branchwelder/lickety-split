@@ -64,6 +64,7 @@ function colorPickerPane(paneID, paneData) {
   return html`<div class="pane-view" style="--color: ${colors[paneData]}">
     <span>paneID: ${paneID} </span>
     <span>paneData: ${paneData}</span>
+    <span>colors["${paneData}"] = ${colors[paneData]}</span>
 
     <input
       .value=${live(colors[paneData])}
